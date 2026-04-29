@@ -87,7 +87,7 @@
         
         <div class="fixed inset-0 transition-opacity bg-slate-900/80 backdrop-blur-sm" @click="closeModal"></div>
 
-        <div class="relative inline-block w-full max-w-2xl text-left align-middle transition-all transform bg-slate-900 border border-slate-700 rounded-3xl shadow-2xl overflow-hidden mt-10 mb-10">
+        <div class="relative inline-block w-full max-w-4xl text-left align-middle transition-all transform bg-slate-900 border border-slate-700 rounded-3xl shadow-2xl overflow-hidden mt-10 mb-10">
           
           <div class="p-6 md:p-8">
             <div class="flex justify-between items-center mb-6">
@@ -215,12 +215,43 @@
       </div>
     </div>
 
+    <!-- Modal de Confirmación de Eliminación -->
+    <div v-if="showDeleteConfirm" class="fixed inset-0 z-[100] flex items-center justify-center p-4">
+      <div class="absolute inset-0 bg-slate-950/40 backdrop-blur-md" @click="showDeleteConfirm = false"></div>
+      <div class="relative bg-slate-900 border border-slate-700/50 rounded-3xl p-8 max-w-md w-full shadow-2xl transform transition-all scale-100">
+        <div class="flex flex-col items-center text-center">
+          <div class="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mb-6">
+            <AlertTriangle class="w-8 h-8 text-red-500" />
+          </div>
+          <h3 class="text-xl font-bold text-white mb-2">¿Eliminar producto?</h3>
+          <p class="text-slate-400 mb-8">¿Estás seguro de que deseas eliminar <strong>{{ selectedProducto?.nombre }}</strong>? Esta acción no se puede deshacer.</p>
+          
+          <div class="flex flex-col sm:flex-row gap-3 w-full">
+            <button 
+              @click="showDeleteConfirm = false" 
+              class="flex-1 px-6 py-3 rounded-2xl font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 transition-colors"
+            >
+              Cancelar
+            </button>
+            <button 
+              @click="handleDelete" 
+              :disabled="isDeleting"
+              class="flex-1 px-6 py-3 rounded-2xl font-semibold bg-red-600 text-white hover:bg-red-500 transition-colors flex items-center justify-center disabled:opacity-50"
+            >
+              <Loader2 v-if="isDeleting" class="w-5 h-5 animate-spin mr-2" />
+              {{ isDeleting ? 'Eliminando...' : 'Sí, eliminar' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted, watch } from 'vue'
-import { ArrowLeft, Search, Loader2, Package, Plus, X, Edit, Trash2, Save, FileText, Tag, History, User } from 'lucide-vue-next'
+import { ArrowLeft, Search, Loader2, Package, Plus, X, Edit, Trash2, Save, FileText, Tag, History, User, AlertTriangle } from 'lucide-vue-next'
 import api from '../services/api'
 
 const productos = ref([])
@@ -232,6 +263,8 @@ let searchTimeout = null
 const showModal = ref(false)
 const editMode = ref(false)
 const createMode = ref(false)
+const showDeleteConfirm = ref(false)
+const isDeleting = ref(false)
 const activeTab = ref('detalles') // 'detalles' o 'historial'
 const selectedProducto = ref(null)
 const formData = ref({
@@ -348,16 +381,22 @@ const saveProducto = async () => {
   }
 }
 
-const confirmDelete = async () => {
-  if (confirm(`¿Estás seguro de que deseas eliminar el producto ${selectedProducto.value.nombre}? Esta acción no se puede deshacer.`)) {
-    try {
-      await api.delete(`/productos/${selectedProducto.value.id}`)
-      productos.value = productos.value.filter(p => p.id !== selectedProducto.value.id)
-      closeModal()
-    } catch (error) {
-      console.error("Error al eliminar:", error)
-      alert("No se pudo eliminar el producto. Verifica que no tenga pedidos asociados.")
-    }
+const confirmDelete = () => {
+  showDeleteConfirm.value = true
+}
+
+const handleDelete = async () => {
+  isDeleting.value = true
+  try {
+    await api.delete(`/productos/${selectedProducto.value.id}`)
+    productos.value = productos.value.filter(p => p.id !== selectedProducto.value.id)
+    showDeleteConfirm.value = false
+    closeModal()
+  } catch (error) {
+    console.error("Error al eliminar:", error)
+    alert("No se pudo eliminar el producto. Verifica que no tenga pedidos asociados.")
+  } finally {
+    isDeleting.value = false
   }
 }
 

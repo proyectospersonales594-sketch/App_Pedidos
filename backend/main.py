@@ -10,7 +10,9 @@ from sqlalchemy.orm import Session
 from sqlalchemy import or_
 from typing import List
 from fastapi import FastAPI, Depends, Query, HTTPException
-
+from fastapi.responses import Response
+import datetime
+from export_excel import generate_pedidos_excel
 app = FastAPI(title="App Pedidos API")
 
 # Configuramos CORS (Cross-Origin Resource Sharing)
@@ -212,6 +214,80 @@ def get_pedidos(db: Session = Depends(get_db)):
      .order_by(models.Pedido.fecha.desc()).all()
     
     return pedidos
+@app.get("/pedidos/exportar")
+def exportar_pedidos_excel(db: Session = Depends(get_db)):
+    hoy = datetime.date.today()
+    
+    # Obtener pedidos cuya fecha de entrega sea >= hoy y no sea null
+    pedidos_db = db.query(models.Pedido).filter(
+        models.Pedido.fecha_entrega != None,
+        models.Pedido.fecha_entrega >= hoy
+    ).order_by(models.Pedido.fecha_entrega.asc(), models.Pedido.id.asc()).all()
+    
+    # Agrupar pedidos por fecha_entrega
+    pedidos_por_fecha = {}
+    
+    for p in pedidos_db:
+        # Extraer items con producto_nombre
+        items_db = db.query(
+            models.ItemPedido.cantidad,
+            models.ItemPedido.precio_unitario,
+            models.ItemPedido.observaciones,
+            models.Producto.nombre.label("producto_nombre")
+        ).join(models.Producto, models.ItemPedido.producto_id == models.Producto.id)\
+         .filter(models.ItemPedido.pedido_id == p.id).all()
+        
+        items = []
+        for i in items_db:
+            items.append({
+                "cantidad": i.cantidad,
+                "precio_unitario": i.precio_unitario,
+                "observaciones": i.observaciones,
+                "producto_nombre": i.producto_nombre
+            })
+            
+        cliente_db = p.cliente
+        cliente_dict = {
+            "nombre_negocio": cliente_db.nombre_negocio or cliente_db.nombre_cliente,
+            "tipo_negocio": cliente_db.tipo_negocio,
+            "direccion": cliente_db.direccion,
+            "barrio_poblacion": cliente_db.barrio_poblacion,
+            "contacto_comercial": cliente_db.contacto_comercial,
+            "telefono": cliente_db.telefono
+        }
+        
+        pedido_dict = {
+            "id": p.id,
+            "fecha_entrega": p.fecha_entrega,
+            "cliente": cliente_dict,
+            "items": items
+        }
+        
+        fecha_key = p.fecha_entrega
+        try:
+            if hasattr(fecha_key, 'date'):
+                fecha_key = fecha_key.date()
+        except Exception:
+            pass
+            
+        if fecha_key not in pedidos_por_fecha:
+            pedidos_por_fecha[fecha_key] = []
+            
+        pedidos_por_fecha[fecha_key].append(pedido_dict)
+        
+    excel_file = generate_pedidos_excel(pedidos_por_fecha)
+    
+    filename = f"Pedidos_Export_{hoy.strftime('%Y%m%d')}.xlsx"
+    headers = {
+        'Content-Disposition': f'attachment; filename="{filename}"'
+    }
+    
+    return Response(
+        content=excel_file.getvalue(), 
+        headers=headers,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+
 @app.get("/pedidos/{pedido_id}", response_model=schemas.PedidoDetailResponse)
 def get_pedido_detalle(pedido_id: int, db: Session = Depends(get_db)):
     # Obtener el pedido con la información del cliente
@@ -290,3 +366,4 @@ def update_pedido(pedido_id: int, pedido_data: schemas.PedidoCreate, db: Session
     db.commit()
     db.refresh(db_pedido)
     return db_pedido
+

@@ -59,7 +59,7 @@
         <div class="flex items-start justify-between mb-4">
           <div class="w-full">
             <h3 class="text-xl font-bold text-slate-100 pr-2 leading-snug break-words">
-              {{ cliente.nombre_cliente }}
+              {{ cliente.nombre_negocio || cliente.nombre_cliente }}
             </h3>
             <div class="flex items-center gap-2 mt-1">
               <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-700 text-slate-300">
@@ -84,8 +84,8 @@
             <p class="text-sm text-slate-300">{{ cliente.telefono || 'Sin teléfono' }}</p>
           </div>
           <div class="flex items-center gap-3">
-            <Store class="w-5 h-5 text-slate-500 shrink-0" />
-            <p class="text-sm text-slate-300 font-medium">{{ cliente.nombre_negocio || 'No especificado' }}</p>
+            <User class="w-5 h-5 text-slate-500 shrink-0" />
+            <p class="text-sm text-slate-300 font-medium">{{ cliente.nombre_cliente }}</p>
           </div>
         </div>
       </div>
@@ -95,13 +95,13 @@
     <div v-if="showModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="closeModal"></div>
       
-      <div class="relative bg-slate-900 border border-slate-700 rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
+      <div class="relative bg-slate-900 border border-slate-700 rounded-3xl w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl">
         <div class="p-6 md:p-8">
           <div class="flex justify-between items-center mb-6">
             <h2 class="text-2xl font-bold text-white flex items-center gap-3">
               <User v-if="!createMode" class="text-violet-400 w-7 h-7" />
               <UserPlus v-else class="text-violet-400 w-7 h-7" />
-              {{ createMode ? 'Nuevo Cliente' : selectedCliente?.nombre_cliente }}
+              {{ createMode ? 'Nuevo Cliente' : (selectedCliente?.nombre_negocio || selectedCliente?.nombre_cliente) }}
             </h2>
             <button @click="closeModal" class="text-slate-400 hover:text-white p-2 rounded-full hover:bg-slate-800 transition">
               <X class="w-6 h-6" />
@@ -132,9 +132,9 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <!-- Nombre -->
               <div class="col-span-1 md:col-span-2">
-                <label class="block text-sm font-medium text-slate-400 mb-1">Nombre Completo <span v-if="editMode" class="text-red-400">*</span></label>
-                <input v-if="editMode" v-model="formData.nombre_cliente" type="text" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 text-white focus:border-violet-500 focus:ring-1 focus:ring-violet-500 outline-none" required />
-                <p v-else class="text-lg font-medium text-slate-200">{{ selectedCliente?.nombre_cliente }}</p>
+                <label class="block text-sm font-medium text-slate-400 mb-1">Nombre del Negocio <span v-if="editMode" class="text-red-400">*</span></label>
+                <input v-if="editMode" v-model="formData.nombre_negocio" type="text" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 text-white focus:border-violet-500 focus:ring-1 focus:ring-violet-500 outline-none" />
+                <p v-else class="text-lg font-medium text-slate-200">{{ selectedCliente?.nombre_negocio || selectedCliente?.nombre_cliente }}</p>
               </div>
 
               <!-- NIT -->
@@ -146,9 +146,9 @@
 
               <!-- Nombre Negocio -->
               <div>
-                <label class="block text-sm font-medium text-slate-400 mb-1">Nombre del Negocio</label>
-                <input v-if="editMode" v-model="formData.nombre_negocio" type="text" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 text-white focus:border-violet-500 outline-none" />
-                <p v-else class="text-slate-300">{{ selectedCliente?.nombre_negocio || 'N/A' }}</p>
+                <label class="block text-sm font-medium text-slate-400 mb-1">Nombre del Cliente</label>
+                <input v-if="editMode" v-model="formData.nombre_cliente" type="text" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 text-white focus:border-violet-500 outline-none" required />
+                <p v-else class="text-slate-300">{{ selectedCliente?.nombre_cliente || 'N/A' }}</p>
               </div>
 
               <!-- Teléfono -->
@@ -278,12 +278,43 @@
       </div>
     </div>
 
+    <!-- Modal de Confirmación de Eliminación -->
+    <div v-if="showDeleteConfirm" class="fixed inset-0 z-[100] flex items-center justify-center p-4">
+      <div class="absolute inset-0 bg-slate-950/40 backdrop-blur-md" @click="showDeleteConfirm = false"></div>
+      <div class="relative bg-slate-900 border border-slate-700/50 rounded-3xl p-8 max-w-md w-full shadow-2xl transform transition-all scale-100">
+        <div class="flex flex-col items-center text-center">
+          <div class="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mb-6">
+            <AlertTriangle class="w-8 h-8 text-red-500" />
+          </div>
+          <h3 class="text-xl font-bold text-white mb-2">¿Eliminar cliente?</h3>
+          <p class="text-slate-400 mb-8">¿Estás seguro de que deseas eliminar a <strong>{{ selectedCliente?.nombre_cliente }}</strong>? Esta acción no se puede deshacer.</p>
+          
+          <div class="flex flex-col sm:flex-row gap-3 w-full">
+            <button 
+              @click="showDeleteConfirm = false" 
+              class="flex-1 px-6 py-3 rounded-2xl font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 transition-colors"
+            >
+              Cancelar
+            </button>
+            <button 
+              @click="handleDelete" 
+              :disabled="isDeleting"
+              class="flex-1 px-6 py-3 rounded-2xl font-semibold bg-red-600 text-white hover:bg-red-500 transition-colors flex items-center justify-center disabled:opacity-50"
+            >
+              <Loader2 v-if="isDeleting" class="w-5 h-5 animate-spin mr-2" />
+              {{ isDeleting ? 'Eliminando...' : 'Sí, eliminar' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { ArrowLeft, Search, Loader2, Users, MapPin, Phone, Store, User, UserPlus, Plus, X, Edit, Trash2, Save } from 'lucide-vue-next'
+import { ArrowLeft, Search, Loader2, Users, MapPin, Phone, Store, User, UserPlus, Plus, X, Edit, Trash2, Save, AlertTriangle } from 'lucide-vue-next'
 import api from '../services/api'
 
 const clientes = ref([])
@@ -299,6 +330,8 @@ const opcionesTipoNegocio = ref([])
 const showModal = ref(false)
 const editMode = ref(false)
 const createMode = ref(false)
+const showDeleteConfirm = ref(false)
+const isDeleting = ref(false)
 const activeTab = ref('detalles') // 'detalles' o 'pedidos'
 const selectedCliente = ref(null)
 const formData = ref({
@@ -450,16 +483,22 @@ const saveClient = async () => {
   }
 }
 
-const confirmDelete = async () => {
-  if (confirm(`¿Estás seguro de que deseas eliminar a ${selectedCliente.value.nombre_cliente}? Esta acción no se puede deshacer.`)) {
-    try {
-      await api.delete(`/clientes/${selectedCliente.value.id}`)
-      clientes.value = clientes.value.filter(c => c.id !== selectedCliente.value.id)
-      closeModal()
-    } catch (error) {
-      console.error("Error al eliminar:", error)
-      alert("Hubo un error al eliminar el cliente.")
-    }
+const confirmDelete = () => {
+  showDeleteConfirm.value = true
+}
+
+const handleDelete = async () => {
+  isDeleting.value = true
+  try {
+    await api.delete(`/clientes/${selectedCliente.value.id}`)
+    clientes.value = clientes.value.filter(c => c.id !== selectedCliente.value.id)
+    showDeleteConfirm.value = false
+    closeModal()
+  } catch (error) {
+    console.error("Error al eliminar:", error)
+    alert("Hubo un error al eliminar el cliente.")
+  } finally {
+    isDeleting.value = false
   }
 }
 

@@ -28,6 +28,10 @@
           />
         </div>
 
+        <button @click="exportarPedidos" :disabled="isExporting" class="w-full md:w-auto px-5 py-3 rounded-2xl font-semibold bg-emerald-600 text-white hover:bg-emerald-500 transition-colors flex items-center justify-center shadow-lg shadow-emerald-600/20 active:scale-95 disabled:opacity-50">
+          <Loader2 v-if="isExporting" class="w-5 h-5 mr-2 animate-spin" />
+          <Download v-else class="w-5 h-5 mr-2" /> Exportar Pedidos
+        </button>
         <button @click="openModal()" class="w-full md:w-auto px-5 py-3 rounded-2xl font-semibold bg-violet-600 text-white hover:bg-violet-500 transition-colors flex items-center justify-center shadow-lg shadow-violet-600/20 active:scale-95">
           <Plus class="w-5 h-5 mr-2" /> Nuevo Pedido
         </button>
@@ -99,7 +103,7 @@
         
         <div class="fixed inset-0 transition-opacity bg-slate-900/80 backdrop-blur-sm" @click="closeModal"></div>
 
-        <div class="relative inline-block w-full max-w-3xl text-left align-middle transition-all transform bg-slate-900 border border-slate-700 rounded-3xl shadow-2xl overflow-hidden mt-10 mb-10">
+        <div class="relative inline-block w-full max-w-5xl text-left align-middle transition-all transform bg-slate-900 border border-slate-700 rounded-3xl shadow-2xl overflow-hidden mt-10 mb-10">
           
           <div class="p-6 md:p-8">
             <div class="flex justify-between items-center mb-6 border-b border-slate-800 pb-4">
@@ -169,17 +173,17 @@
 
                 <div class="p-4 space-y-4">
                   <!-- Cabeceras (solo en desktop) -->
-                  <div class="hidden md:grid grid-cols-12 gap-4 text-xs font-semibold text-slate-400 uppercase tracking-wider px-2">
+                  <div class="hidden md:grid grid-cols-12 gap-3 text-xs font-semibold text-slate-400 uppercase tracking-wider px-2">
                     <div class="col-span-3">Producto</div>
                     <div class="col-span-1 text-center">Cant.</div>
-                    <div class="col-span-2 text-right">Precio</div>
+                    <div class="col-span-2 text-center">Precio</div>
                     <div class="col-span-3 text-center">Observaciones</div>
                     <div class="col-span-2 text-right">Subtotal</div>
                     <div class="col-span-1"></div>
                   </div>
 
                   <!-- Filas -->
-                  <div v-for="(item, index) in formData.items" :key="index" class="grid grid-cols-1 md:grid-cols-12 gap-4 items-start bg-slate-800/50 p-3 md:p-2 rounded-lg md:bg-transparent border border-slate-700 md:border-none relative group transition-all">
+                  <div v-for="(item, index) in formData.items" :key="index" class="grid grid-cols-1 md:grid-cols-12 gap-3 items-start bg-slate-800/50 p-3 md:p-2 rounded-lg md:bg-transparent border border-slate-700 md:border-none relative group transition-all">
                     
                     <div class="col-span-1 md:col-span-3">
                       <label class="md:hidden block text-xs text-slate-400 mb-1">Producto</label>
@@ -193,13 +197,13 @@
                     
                     <div class="col-span-1 md:col-span-1">
                       <label class="md:hidden block text-xs text-slate-400 mb-1">Cant.</label>
-                      <input v-model="item.cantidad" type="number" min="1" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-2 text-sm text-white focus:border-violet-500 outline-none" />
+                      <input v-model="item.cantidad" type="number" min="1" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-1.5 py-2 text-sm text-center text-white focus:border-violet-500 outline-none" />
                     </div>
                     
                     <div class="col-span-1 md:col-span-2">
                       <label class="md:hidden block text-xs text-slate-400 mb-1">Precio Unitario</label>
                       <div class="relative">
-                        <input v-model="item.precio_unitario" type="number" step="0.01" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-2 text-sm text-white focus:border-violet-500 outline-none" />
+                        <input v-model="item.precio_unitario" type="number" step="0.01" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-2 text-sm text-center text-white focus:border-violet-500 outline-none" />
                         <div v-if="item.loadingPrice" class="absolute right-2 top-2">
                           <Loader2 class="w-3 h-3 text-violet-500 animate-spin" />
                         </div>
@@ -282,7 +286,7 @@
     <div v-if="showDetailModal" class="fixed inset-0 z-50 overflow-y-auto">
       <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0">
         <div class="fixed inset-0 transition-opacity bg-slate-900/80 backdrop-blur-sm" @click="closeDetailModal"></div>
-        <div class="relative inline-block w-full max-w-2xl text-left align-middle transition-all transform bg-slate-900 border border-slate-700 rounded-3xl shadow-2xl overflow-hidden mt-10 mb-10">
+        <div class="relative inline-block w-full max-w-4xl text-left align-middle transition-all transform bg-slate-900 border border-slate-700 rounded-3xl shadow-2xl overflow-hidden mt-10 mb-10">
           <div class="p-6 md:p-8">
             <div v-if="loadingDetail" class="flex flex-col items-center py-12">
               <Loader2 class="w-10 h-10 text-violet-500 animate-spin mb-4" />
@@ -365,13 +369,44 @@
         </div>
       </div>
     </div>
+    
+    <!-- Modal de Confirmación de Eliminación -->
+    <div v-if="showDeleteConfirm" class="fixed inset-0 z-[100] flex items-center justify-center p-4">
+      <div class="absolute inset-0 bg-slate-950/40 backdrop-blur-md" @click="showDeleteConfirm = false"></div>
+      <div class="relative bg-slate-900 border border-slate-700/50 rounded-3xl p-8 max-w-md w-full shadow-2xl transform transition-all scale-100">
+        <div class="flex flex-col items-center text-center">
+          <div class="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mb-6">
+            <AlertTriangle class="w-8 h-8 text-red-500" />
+          </div>
+          <h3 class="text-xl font-bold text-white mb-2">¿Confirmar eliminación?</h3>
+          <p class="text-slate-400 mb-8">Esta acción eliminará permanentemente el pedido y todos sus items. No se puede deshacer.</p>
+          
+          <div class="flex flex-col sm:flex-row gap-3 w-full">
+            <button 
+              @click="showDeleteConfirm = false" 
+              class="flex-1 px-6 py-3 rounded-2xl font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 transition-colors"
+            >
+              Cancelar
+            </button>
+            <button 
+              @click="handleDelete" 
+              :disabled="isDeleting"
+              class="flex-1 px-6 py-3 rounded-2xl font-semibold bg-red-600 text-white hover:bg-red-500 transition-colors flex items-center justify-center disabled:opacity-50"
+            >
+              <Loader2 v-if="isDeleting" class="w-5 h-5 animate-spin mr-2" />
+              {{ isDeleting ? 'Eliminando...' : 'Sí, eliminar' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
 
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { ArrowLeft, ShoppingCart, Plus, X, Trash2, Edit, Save, Loader2, Calendar, Truck, History, Tag, Search } from 'lucide-vue-next'
+import { ArrowLeft, ShoppingCart, Plus, X, Trash2, Edit, Save, Loader2, Calendar, Truck, History, Tag, Search, Download, AlertTriangle } from 'lucide-vue-next'
 import api from '../services/api'
 
 // States
@@ -379,8 +414,11 @@ const pedidos = ref([])
 const clientes = ref([])
 const productos = ref([])
 const loading = ref(false)
+const isExporting = ref(false)
 const showModal = ref(false)
+const showDeleteConfirm = ref(false)
 const saving = ref(false)
+const isDeleting = ref(false)
 const searchQuery = ref('')
 const showDetailModal = ref(false)
 const selectedPedidoDetail = ref(null)
@@ -474,6 +512,38 @@ const fetchPedidos = async () => {
   }
 }
 
+const exportarPedidos = async () => {
+  isExporting.value = true
+  try {
+    const response = await api.get('/pedidos/exportar', {
+      responseType: 'blob'
+    })
+    
+    const contentDisposition = response.headers['content-disposition']
+    let filename = 'Pedidos_Export.xlsx'
+    if (contentDisposition) {
+      const filenameMatch = contentDisposition.match(/filename="?([^"]+)"?/)
+      if (filenameMatch && filenameMatch.length >= 2)
+        filename = filenameMatch[1]
+    }
+    
+    const blob = new Blob([response.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.setAttribute('download', filename)
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(url)
+  } catch (error) {
+    console.error("Error al exportar pedidos:", error)
+    alert("Hubo un error al exportar los pedidos.")
+  } finally {
+    isExporting.value = false
+  }
+}
+
 const openDetailModal = async (pedido) => {
   showDetailModal.value = true
   loadingDetail.value = true
@@ -564,17 +634,25 @@ const enterEditMode = () => {
   openModal(pedido)
 }
 
-const confirmDelete = async () => {
+const confirmDelete = () => {
   if (!selectedPedidoDetail.value) return
-  if (confirm("¿Estás seguro de que deseas eliminar este pedido? Esta acción no se puede deshacer.")) {
-    try {
-      await api.delete(`/pedidos/${selectedPedidoDetail.value.id}`)
-      closeDetailModal()
-      fetchPedidos()
-    } catch (error) {
-      console.error("Error al eliminar pedido:", error)
-      alert("Error al eliminar el pedido")
-    }
+  showDeleteConfirm.value = true
+}
+
+const handleDelete = async () => {
+  if (!selectedPedidoDetail.value) return
+  
+  isDeleting.value = true
+  try {
+    await api.delete(`/pedidos/${selectedPedidoDetail.value.id}`)
+    showDeleteConfirm.value = false
+    closeDetailModal()
+    fetchPedidos()
+  } catch (error) {
+    console.error("Error al eliminar pedido:", error)
+    alert("Error al eliminar el pedido")
+  } finally {
+    isDeleting.value = false
   }
 }
 
