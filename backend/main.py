@@ -18,24 +18,63 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 from apscheduler.triggers.cron import CronTrigger
 from tasks import tarea_envio_alertas
+from database import SessionLocal
 
 # Inicializamos el scheduler
 scheduler = BackgroundScheduler()
 
+def verificar_reporte_diario():
+    """
+    Verifica si ya se envió el reporte de hoy. 
+    Si no, lo envía y actualiza la fecha en la base de datos.
+    """
+    db = SessionLocal()
+    try:
+        hoy = datetime.date.today().isoformat() # Formato YYYY-MM-DD
+        
+        # Consultar la última fecha de envío
+        config = db.query(models.Configuracion).filter(models.Configuracion.clave == "ultimo_envio_alerta").first()
+        
+        if not config:
+            # Si no existe el registro, lo creamos
+            config = models.Configuracion(clave="ultimo_envio_alerta", valor="")
+            db.add(config)
+            db.commit()
+
+        if config.valor != hoy:
+            print(f"Iniciando envío de reporte diario para hoy ({hoy})...")
+            # Ejecutar la tarea de envío
+            tarea_envio_alertas()
+            
+            # Actualizar la fecha para no volver a enviar hoy
+            config.valor = hoy
+            db.commit()
+            print("Reporte diario enviado exitosamente.")
+        else:
+            print(f"El reporte de hoy ({hoy}) ya fue enviado anteriormente.")
+            
+    except Exception as e:
+        print(f"Error al verificar/enviar reporte diario: {e}")
+    finally:
+        db.close()
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # --- FASE DE PRODUCCIÓN ---
-    # Programar de Lunes a Sábado a las 7:00 AM
+    # 1. Al despertar (primera visita del día), verificamos si hay que enviar el reporte
+    print("Servidor iniciado/despertado. Verificando reporte diario...")
+    verificar_reporte_diario()
+
+    # 2. Programar también el scheduler por si el servidor se mantiene encendido
     scheduler.add_job(
-        tarea_envio_alertas,
+        verificar_reporte_diario, # Usamos la misma lógica de verificación
         trigger=CronTrigger(day_of_week='mon-sat', hour=7, minute=0),
         id="alerta_diaria_clientes",
-        name="Enviar alerta diaria de clientes inactivos a las 7am",
+        name="Verificar y enviar alerta diaria a las 7am",
         replace_existing=True,
     )
 
     scheduler.start()
-    print("Scheduler iniciado. Tarea de correos programada.")
     yield
     scheduler.shutdown()
     print("Scheduler detenido.")

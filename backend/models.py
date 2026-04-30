@@ -61,3 +61,11 @@ class ItemPedido(Base):
     
     pedido = relationship("Pedido", back_populates="items")
     producto = relationship("Producto", back_populates="items")
+
+
+class Configuracion(Base):
+    __tablename__ = "configuracion"
+
+    id = Column(Integer, primary_key=True, index=True)
+    clave = Column(String, unique=True, index=True)
+    valor = Column(String)
