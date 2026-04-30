@@ -44,12 +44,15 @@ def verificar_reporte_diario():
         if config.valor != hoy:
             print(f"Iniciando envío de reporte diario para hoy ({hoy})...")
             # Ejecutar la tarea de envío
-            tarea_envio_alertas()
+            enviado = tarea_envio_alertas()
             
-            # Actualizar la fecha para no volver a enviar hoy
-            config.valor = hoy
-            db.commit()
-            print("Reporte diario enviado exitosamente.")
+            if enviado:
+                # Solo actualizamos la fecha si se envió con éxito
+                config.valor = hoy
+                db.commit()
+                print("Reporte diario enviado exitosamente.")
+            else:
+                print("No se pudo enviar el reporte hoy. Se reintentará en el próximo inicio.")
         else:
             print(f"El reporte de hoy ({hoy}) ya fue enviado anteriormente.")
             
@@ -58,16 +61,20 @@ def verificar_reporte_diario():
     finally:
         db.close()
 
+import threading
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # --- FASE DE PRODUCCIÓN ---
-    # 1. Al despertar (primera visita del día), verificamos si hay que enviar el reporte
-    print("Servidor iniciado/despertado. Verificando reporte diario...")
-    verificar_reporte_diario()
+    # 1. Al despertar, verificamos el reporte en un HILO SEPARADO
+    # Esto evita que la App se quede "congelada" al iniciar si el correo tarda.
+    print("Servidor iniciado/despertado. Iniciando verificación de reporte en segundo plano...")
+    thread = threading.Thread(target=verificar_reporte_diario)
+    thread.start()
 
-    # 2. Programar también el scheduler por si el servidor se mantiene encendido
+    # 2. Programar también el scheduler
     scheduler.add_job(
-        verificar_reporte_diario, # Usamos la misma lógica de verificación
+        verificar_reporte_diario, 
         trigger=CronTrigger(day_of_week='mon-sat', hour=7, minute=0),
         id="alerta_diaria_clientes",
         name="Verificar y enviar alerta diaria a las 7am",

@@ -124,7 +124,7 @@ def enviar_correo_alertas(destinatario, clientes_sin_pedidos, clientes_riesgo):
     msg.attach(parte_html)
 
     try:
-        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
+        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT, timeout=30)
         server.starttls()
         server.login(SMTP_USERNAME, SMTP_PASSWORD)
         server.sendmail(remitente, destinatario, msg.as_string())
