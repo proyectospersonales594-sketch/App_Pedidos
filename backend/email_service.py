@@ -1,15 +1,13 @@
 import os
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
+import resend
 from dotenv import load_dotenv
 
 load_dotenv()
 
-SMTP_SERVER = os.getenv("SMTP_SERVER", "smtp.gmail.com")
-SMTP_PORT = int(os.getenv("SMTP_PORT", 587))
-SMTP_USERNAME = os.getenv("SMTP_USERNAME")
-SMTP_PASSWORD = os.getenv("SMTP_PASSWORD")
+# Configuración de Resend
+RESEND_API_KEY = os.getenv("RESEND_API_KEY")
+if RESEND_API_KEY:
+    resend.api_key = RESEND_API_KEY
 
 def generar_html_tabla(clientes, titulo, descripcion):
     """Genera una tabla HTML atractiva para una lista de clientes."""
@@ -54,17 +52,10 @@ def generar_html_tabla(clientes, titulo, descripcion):
 
 
 def enviar_correo_alertas(destinatario, clientes_sin_pedidos, clientes_riesgo):
-    """Construye y envía el correo con las dos listas de clientes."""
-    if not SMTP_USERNAME or not SMTP_PASSWORD:
-        print("ERROR: Credenciales SMTP no configuradas en .env")
+    """Construye y envía el correo con las dos listas de clientes usando Resend API."""
+    if not RESEND_API_KEY:
+        print("ERROR: RESEND_API_KEY no configurada en .env o variables de entorno")
         return False
-
-    remitente = SMTP_USERNAME
-
-    msg = MIMEMultipart("alternative")
-    msg["Subject"] = "Reporte Diario de Clientes Inactivos"
-    msg["From"] = remitente
-    msg["To"] = destinatario
 
     html_sin_pedidos = generar_html_tabla(
         clientes_sin_pedidos,
@@ -103,13 +94,13 @@ def enviar_correo_alertas(destinatario, clientes_sin_pedidos, clientes_riesgo):
             </div>
             
             <div style="width: 100%;">
-                {html_sin_pedidos}
+                {{html_sin_pedidos}}
             </div>
             
             <div style="height: 1px; background-color: #e5e7eb; margin: 40px 0;"></div>
             
             <div style="width: 100%;">
-                {html_riesgo}
+                {{html_riesgo}}
             </div>
             
             <div style="text-align: center; margin-top: 45px; padding-top: 25px; border-top: 1px solid #f3f4f6;">
@@ -118,20 +109,21 @@ def enviar_correo_alertas(destinatario, clientes_sin_pedidos, clientes_riesgo):
         </div>
     </body>
     </html>
-    """
-
-    parte_html = MIMEText(html_body, "html")
-    msg.attach(parte_html)
+    """.replace("{html_sin_pedidos}", html_sin_pedidos).replace("{html_riesgo}", html_riesgo)
 
     try:
-        # Usamos SMTP_SSL para el puerto 465 (más compatible con Render)
-        puerto_ssl = 465
-        server = smtplib.SMTP_SSL(SMTP_SERVER, puerto_ssl, timeout=30)
-        server.login(SMTP_USERNAME, SMTP_PASSWORD)
-        server.sendmail(remitente, destinatario, msg.as_string())
-        server.quit()
-        print(f"Correo de alerta enviado exitosamente a {destinatario}")
+        # Nota: Resend (free tier) solo permite enviar desde 'onboarding@resend.dev' 
+        # a menos que verifiques un dominio.
+        params = {
+            "from": "onboarding@resend.dev",
+            "to": destinatario,
+            "subject": "Reporte Diario de Clientes Inactivos",
+            "html": html_body,
+        }
+
+        email = resend.Emails.send(params)
+        print(f"Correo de alerta enviado exitosamente vía Resend a {destinatario}")
         return True
     except Exception as e:
-        print(f"Error al enviar correo: {e}")
+        print(f"Error al enviar correo vía Resend: {e}")
         return False
