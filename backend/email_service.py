@@ -124,8 +124,9 @@ def enviar_correo_alertas(destinatario, clientes_sin_pedidos, clientes_riesgo):
     msg.attach(parte_html)
 
     try:
-        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT, timeout=30)
-        server.starttls()
+        # Usamos SMTP_SSL para el puerto 465 (más compatible con Render)
+        puerto_ssl = 465
+        server = smtplib.SMTP_SSL(SMTP_SERVER, puerto_ssl, timeout=30)
         server.login(SMTP_USERNAME, SMTP_PASSWORD)
         server.sendmail(remitente, destinatario, msg.as_string())
         server.quit()
