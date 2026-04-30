@@ -13,7 +13,34 @@ from fastapi import FastAPI, Depends, Query, HTTPException
 from fastapi.responses import Response
 import datetime
 from export_excel import generate_pedidos_excel
-app = FastAPI(title="App Pedidos API")
+from contextlib import asynccontextmanager
+from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.triggers.interval import IntervalTrigger
+from apscheduler.triggers.cron import CronTrigger
+from tasks import tarea_envio_alertas
+
+# Inicializamos el scheduler
+scheduler = BackgroundScheduler()
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # --- FASE DE PRODUCCIÓN ---
+    # Programar de Lunes a Sábado a las 7:00 AM
+    scheduler.add_job(
+        tarea_envio_alertas,
+        trigger=CronTrigger(day_of_week='mon-sat', hour=7, minute=0),
+        id="alerta_diaria_clientes",
+        name="Enviar alerta diaria de clientes inactivos a las 7am",
+        replace_existing=True,
+    )
+
+    scheduler.start()
+    print("Scheduler iniciado. Tarea de correos programada.")
+    yield
+    scheduler.shutdown()
+    print("Scheduler detenido.")
+
+app = FastAPI(title="App Pedidos API", lifespan=lifespan)
 
 # Configuramos CORS (Cross-Origin Resource Sharing)
 # Esto es vital para que el frontend en Vue (que corre en otro puerto) pueda llamar a nuestra API.
