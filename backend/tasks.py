@@ -39,8 +39,8 @@ def tarea_envio_alertas():
 
         print(f"Encontrados: {len(clientes_sin_pedidos)} sin pedidos, {len(clientes_riesgo)} inactivos.")
 
-        # Intentar envío
-        exito = enviar_correo_alertas("carojames79@gmail.com", clientes_sin_pedidos, clientes_riesgo)
+        # Intentar envío (Usando el correo de la cuenta para saltar restricciones de prueba)
+        exito = enviar_correo_alertas("proyectospersonales594@gmail.com", clientes_sin_pedidos, clientes_riesgo)
         return exito
         
     except Exception as e:
