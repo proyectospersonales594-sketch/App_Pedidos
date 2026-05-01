@@ -520,7 +520,7 @@ const exportarPedidos = async () => {
     })
     
     const contentDisposition = response.headers['content-disposition']
-    let filename = 'Pedidos_Export.xlsx'
+    let filename = 'pedidos Jose Caro.xlsx'
     if (contentDisposition) {
       const filenameMatch = contentDisposition.match(/filename="?([^"]+)"?/)
       if (filenameMatch && filenameMatch.length >= 2)
