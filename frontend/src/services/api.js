@@ -1,8 +1,11 @@
 import axios from 'axios';
 
 const api = axios.create({
-  // Si existe VITE_API_URL en el entorno (Vercel), la usa; si no, usa la de Render directamente
-  baseURL: import.meta.env.VITE_API_URL || 'https://app-pedidos-fwze.onrender.com',
+  // Detecta automáticamente si usar el servidor local o el de producción
+  baseURL: import.meta.env.VITE_API_URL || 
+           (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+            ? 'http://localhost:8000' 
+            : 'https://app-pedidos-fwze.onrender.com'),
   timeout: 15000,
 });
 

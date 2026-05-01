@@ -350,7 +350,7 @@ def exportar_pedidos_excel(db: Session = Depends(get_db)):
         
     excel_file = generate_pedidos_excel(pedidos_por_fecha)
     
-    filename = f"Pedidos_Export_{hoy.strftime('%Y%m%d')}.xlsx"
+    filename = f"pedidos Jose Caro {hoy.strftime('%d-%m-%Y')}.xlsx"
     headers = {
         'Content-Disposition': f'attachment; filename="{filename}"'
     }
