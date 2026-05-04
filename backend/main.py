@@ -12,6 +12,7 @@ from typing import List
 from fastapi import FastAPI, Depends, Query, HTTPException
 from fastapi.responses import Response
 import datetime
+from datetime import timezone, timedelta
 from export_excel import generate_pedidos_excel
 from contextlib import asynccontextmanager
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -20,8 +21,9 @@ from apscheduler.triggers.cron import CronTrigger
 from tasks import tarea_envio_alertas
 from database import SessionLocal
 
-# Inicializamos el scheduler
-scheduler = BackgroundScheduler()
+# Inicializamos el scheduler con zona horaria de Colombia
+col_tz = timezone(timedelta(hours=-5))
+scheduler = BackgroundScheduler(timezone=col_tz)
 
 def verificar_reporte_diario():
     """
@@ -30,7 +32,9 @@ def verificar_reporte_diario():
     """
     db = SessionLocal()
     try:
-        hoy = datetime.date.today().isoformat() # Formato YYYY-MM-DD
+        # Obtener fecha hoy en Colombia (UTC-5)
+        col_tz = timezone(timedelta(hours=-5))
+        hoy = datetime.datetime.now(col_tz).date().isoformat() 
         
         # Consultar la última fecha de envío
         config = db.query(models.Configuracion).filter(models.Configuracion.clave == "ultimo_envio_alerta").first()
@@ -75,7 +79,7 @@ async def lifespan(app: FastAPI):
     # 2. Programar también el scheduler
     scheduler.add_job(
         verificar_reporte_diario, 
-        trigger=CronTrigger(day_of_week='mon-sat', hour=7, minute=0),
+        trigger=CronTrigger(day_of_week='mon-sat', hour=7, minute=0, timezone=col_tz),
         id="alerta_diaria_clientes",
         name="Verificar y enviar alerta diaria a las 7am",
         replace_existing=True,
@@ -290,12 +294,20 @@ def get_pedidos(db: Session = Depends(get_db)):
     return pedidos
 @app.get("/pedidos/exportar")
 def exportar_pedidos_excel(db: Session = Depends(get_db)):
-    hoy = datetime.date.today()
+    col_tz = timezone(timedelta(hours=-5))
+    ahora_col = datetime.datetime.now(col_tz)
+    hoy = ahora_col.date()
     
-    # Obtener pedidos cuya fecha de entrega sea >= hoy y no sea null
+    # Lógica de corte: Si es después de las 12 PM, solo exportar de mañana en adelante
+    if ahora_col.hour >= 12:
+        fecha_inicio_export = hoy + datetime.timedelta(days=1)
+    else:
+        fecha_inicio_export = hoy
+
+    # Obtener pedidos cuya fecha de entrega sea >= fecha_inicio_export y no sea null
     pedidos_db = db.query(models.Pedido).filter(
         models.Pedido.fecha_entrega != None,
-        models.Pedido.fecha_entrega >= hoy
+        models.Pedido.fecha_entrega >= fecha_inicio_export
     ).order_by(models.Pedido.fecha_entrega.asc(), models.Pedido.id.asc()).all()
     
     # Agrupar pedidos por fecha_entrega

@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, Float, ForeignKey, DateTime
 from sqlalchemy.orm import relationship
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from database import Base
 
 class Cliente(Base):
@@ -40,7 +40,7 @@ class Pedido(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     cliente_id = Column(Integer, ForeignKey("clientes.id"))
-    fecha = Column(DateTime, default=datetime.utcnow)
+    fecha = Column(DateTime, default=lambda: datetime.now(timezone(timedelta(hours=-5))))
     fecha_entrega = Column(DateTime, nullable=True)
     estado = Column(String, default="Pendiente")
     total = Column(Float, default=0.0)

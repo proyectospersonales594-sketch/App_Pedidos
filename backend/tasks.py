@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from database import SessionLocal
 from models import Cliente, Pedido
 from email_service import enviar_correo_alertas
@@ -21,8 +21,9 @@ def tarea_envio_alertas():
             ~Cliente.id.in_(db.query(Pedido.cliente_id).distinct())
         ).all()
 
-        # 2. Clientes inactivos > 8 días
-        hace_8_dias = datetime.utcnow() - timedelta(days=8)
+        # 2. Clientes inactivos > 8 días (Usando hora Colombia UTC-5)
+        ahora_col = datetime.now(timezone(timedelta(hours=-5)))
+        hace_8_dias = ahora_col - timedelta(days=8)
         subquery = db.query(
             Pedido.cliente_id, 
             func.max(Pedido.fecha).label('ultima_fecha')

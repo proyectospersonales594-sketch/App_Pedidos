@@ -444,15 +444,26 @@ const formatCurrency = (value) => {
 const getEstadoDisplay = (pedido) => {
   if (!pedido.fecha_entrega) return 'Pendiente'
   
+  const ahora = new Date()
   const hoy = new Date()
   hoy.setHours(0, 0, 0, 0)
   
   const fechaEntrega = new Date(pedido.fecha_entrega)
   fechaEntrega.setHours(0, 0, 0, 0)
   
+  // Si la fecha de entrega es anterior a hoy
   if (fechaEntrega < hoy) {
     return 'Remitido'
   }
+  
+  // Si la fecha de entrega es hoy
+  if (fechaEntrega.getTime() === hoy.getTime()) {
+    // Si ya pasaron las 12:00 PM
+    if (ahora.getHours() >= 12) {
+      return 'Remitido'
+    }
+  }
+  
   return 'Pendiente'
 }
 
