@@ -40,7 +40,7 @@ class Pedido(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     cliente_id = Column(Integer, ForeignKey("clientes.id"))
-    fecha = Column(DateTime, default=lambda: datetime.now(timezone(timedelta(hours=-5))))
+    fecha = Column(DateTime, default=lambda: datetime.now(timezone(timedelta(hours=-5))).replace(tzinfo=None))
     fecha_entrega = Column(DateTime, nullable=True)
     estado = Column(String, default="Pendiente")
     total = Column(Float, default=0.0)

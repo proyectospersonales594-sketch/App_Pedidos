@@ -22,7 +22,7 @@ def tarea_envio_alertas():
         ).all()
 
         # 2. Clientes inactivos > 8 días (Usando hora Colombia UTC-5)
-        ahora_col = datetime.now(timezone(timedelta(hours=-5)))
+        ahora_col = datetime.now(timezone(timedelta(hours=-5))).replace(tzinfo=None)
         hace_8_dias = ahora_col - timedelta(days=8)
         subquery = db.query(
             Pedido.cliente_id, 
