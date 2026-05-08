@@ -12,6 +12,8 @@ def generate_pedidos_excel(pedidos_por_fecha):
     header_font = Font(color="FFFFFF", bold=True)
     header_align = Alignment(horizontal="center", vertical="center", wrap_text=True)
     
+    data_font = Font(size=10) # Fuente reducida a tamaño 10 para los datos
+    
     border_side = Side(border_style="thin", color="000000")
     thin_border = Border(left=border_side, right=border_side, top=border_side, bottom=border_side)
     
@@ -75,6 +77,7 @@ def generate_pedidos_excel(pedidos_por_fecha):
                     cell.fill = current_fill
                     cell.border = thin_border
                     cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+                    cell.font = data_font
 
             # 2. Insertar datos del cliente (Columnas 1-7)
             f_ent = pedido["fecha_entrega"].strftime('%Y-%m-%d') if pedido.get("fecha_entrega") else ''
