@@ -16,9 +16,10 @@ def tarea_envio_alertas():
     db: Session = SessionLocal()
     try:
         # ... (lógica de búsqueda de clientes sin cambios) ...
-        # 1. Clientes que nunca han hecho pedidos
         clientes_sin_pedidos = db.query(Cliente).filter(
-            ~Cliente.id.in_(db.query(Pedido.cliente_id).distinct())
+            ~Cliente.id.in_(
+                db.query(Pedido.cliente_id).filter(Pedido.cliente_id.isnot(None)).distinct()
+            )
         ).all()
 
         # 2. Clientes inactivos > 8 días (Usando hora Colombia UTC-5)
