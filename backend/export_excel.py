@@ -74,7 +74,7 @@ def generate_pedidos_excel(pedidos_por_fecha):
                     cell = ws.cell(row=r, column=c)
                     cell.fill = current_fill
                     cell.border = thin_border
-                    cell.alignment = Alignment(horizontal="center", vertical="center")
+                    cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
 
             # 2. Insertar datos del cliente (Columnas 1-7)
             f_ent = pedido["fecha_entrega"].strftime('%Y-%m-%d') if pedido.get("fecha_entrega") else ''
@@ -110,18 +110,31 @@ def generate_pedidos_excel(pedidos_por_fecha):
             
             current_row = end_row + 1
 
-        # Auto-ajustar anchos
-        for col in ws.columns:
-            max_length = 0
-            column_letter = get_column_letter(col[0].column)
-            for cell in col:
-                try:
-                    if cell.value:
-                        lines = str(cell.value).split('\n')
-                        current_max = max(len(line) for line in lines)
-                        if current_max > max_length: max_length = current_max
-                except: pass
-            ws.column_dimensions[column_letter].width = max(max_length + 2, 10)
+        # 4. Configurar anchos fijos basados en la plantilla
+        anchos_columnas = {
+            'A': 15.0,        # Fecha de entrega
+            'B': 17.43,       # Nombre de negocio
+            'C': 12.43,       # Tipo
+            'D': 15.0,        # Direccion
+            'E': 14.29,       # Barrio_poblacion
+            'F': 16.71,       # Contacto_comercial
+            'G': 15.0,        # Telefono
+            'H': 13.0,        # Productos
+            'I': 9.29,        # Cantidad
+            'J': 10.43,       # Precio unit.
+            'K': 12.57,       # Valor total
+            'L': 12.86        # Observaciones
+        }
+        
+        for col_letter, width in anchos_columnas.items():
+            ws.column_dimensions[col_letter].width = width
+
+        # 5. Configurar impresión (Tamaño carta, ajustar a 1 página de ancho, horizontal)
+        ws.page_setup.paperSize = ws.PAPERSIZE_LETTER
+        ws.page_setup.orientation = ws.ORIENTATION_LANDSCAPE
+        ws.sheet_properties.pageSetUpPr.fitToPage = True
+        ws.page_setup.fitToWidth = 1
+        ws.page_setup.fitToHeight = 0 # Que use las páginas hacia abajo que necesite
 
     if len(wb.sheetnames) > 1 and "Sheet" in wb.sheetnames:
         del wb["Sheet"]
