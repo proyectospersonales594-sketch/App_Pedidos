@@ -40,17 +40,17 @@ def generate_pedidos_excel(pedidos_por_fecha):
             
         ws = wb.create_sheet(title=sheet_name)
         
-        # Fila 1: Título (Centrado en 12 columnas: A a L)
-        ws.merge_cells("A1:L1")
+        # Fila 1: Título (Centrado en 13 columnas: A a M)
+        ws.merge_cells("A1:M1")
         cell_title = ws["A1"]
         cell_title.value = f"PEDIDOS JOSE CARO {title_date}"
         cell_title.font = header_font
         cell_title.fill = header_fill
         cell_title.alignment = Alignment(horizontal="center", vertical="center")
         
-        # Fila 2: Cabeceras (Eliminamos ID Pedido)
+        # Fila 2: Cabeceras
         headers = ["Fecha de entrega", "Nombre de negocio", "Tipo", "Direccion", 
-                   "Barrio_poblacion", "Contacto_comercial", "Telefono", "Productos", 
+                   "Barrio_poblacion", "Nombre cliente", "NIT", "Telefono", "Productos", 
                    "Cantidad", "Precio unit.", "Valor total", "Observaciones"]
         
         for col_num, header_title in enumerate(headers, 1):
@@ -70,16 +70,16 @@ def generate_pedidos_excel(pedidos_por_fecha):
             start_row = current_row
             end_row = current_row + num_items - 1
             
-            # 1. Aplicar fondo y bordes a todo el bloque (12 columnas)
+            # 1. Aplicar fondo y bordes a todo el bloque (13 columnas)
             for r in range(start_row, end_row + 1):
-                for c in range(1, 13):
+                for c in range(1, 14):
                     cell = ws.cell(row=r, column=c)
                     cell.fill = current_fill
                     cell.border = thin_border
                     cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
                     cell.font = data_font
 
-            # 2. Insertar datos del cliente (Columnas 1-7)
+            # 2. Insertar datos del cliente (Columnas 1-8)
             f_ent = pedido["fecha_entrega"].strftime('%Y-%m-%d') if pedido.get("fecha_entrega") else ''
             ws.cell(row=start_row, column=1, value=f_ent)
             ws.cell(row=start_row, column=2, value=cliente.get("nombre_negocio", ""))
@@ -89,44 +89,46 @@ def generate_pedidos_excel(pedidos_por_fecha):
             c_dir.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
             
             ws.cell(row=start_row, column=5, value=cliente.get("barrio_poblacion", ""))
-            ws.cell(row=start_row, column=6, value=cliente.get("contacto_comercial", ""))
-            ws.cell(row=start_row, column=7, value=cliente.get("telefono", ""))
+            ws.cell(row=start_row, column=6, value=cliente.get("nombre_cliente", ""))
+            ws.cell(row=start_row, column=7, value=cliente.get("cc_o_nit", ""))
+            ws.cell(row=start_row, column=8, value=cliente.get("telefono", ""))
 
             if num_items > 1:
-                for col_idx in range(1, 8):
+                for col_idx in range(1, 9):
                     ws.merge_cells(start_row=start_row, start_column=col_idx, end_row=end_row, end_column=col_idx)
 
-            # 3. Insertar productos (Columnas 8-12)
+            # 3. Insertar productos (Columnas 9-13)
             for i, item in enumerate(items):
                 r = start_row + i
-                ws.cell(row=r, column=8, value=item["producto_nombre"]).alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
-                ws.cell(row=r, column=9, value=item["cantidad"])
+                ws.cell(row=r, column=9, value=item["producto_nombre"]).alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+                ws.cell(row=r, column=10, value=item["cantidad"])
                 
-                c_precio = ws.cell(row=r, column=10, value=item["precio_unitario"])
+                c_precio = ws.cell(row=r, column=11, value=item["precio_unitario"])
                 c_precio.number_format = '#,##0'
                 
-                c_total = ws.cell(row=r, column=11, value=item["cantidad"] * item["precio_unitario"])
+                c_total = ws.cell(row=r, column=12, value=item["cantidad"] * item["precio_unitario"])
                 c_total.number_format = '#,##0'
                 
-                c_obs = ws.cell(row=r, column=12, value=item.get("observaciones", ""))
+                c_obs = ws.cell(row=r, column=13, value=item.get("observaciones", ""))
                 c_obs.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
             
             current_row = end_row + 1
 
-        # 4. Configurar anchos fijos basados en la plantilla
+        # 4. Configurar anchos fijos (Ajustados para 13 columnas en tamaño carta)
         anchos_columnas = {
-            'A': 15.0,        # Fecha de entrega
-            'B': 17.43,       # Nombre de negocio
-            'C': 12.43,       # Tipo
-            'D': 15.0,        # Direccion
-            'E': 14.29,       # Barrio_poblacion
-            'F': 16.71,       # Contacto_comercial
-            'G': 15.0,        # Telefono
-            'H': 13.0,        # Productos
-            'I': 9.29,        # Cantidad
-            'J': 10.43,       # Precio unit.
-            'K': 12.57,       # Valor total
-            'L': 12.86        # Observaciones
+            'A': 11.0,        # Fecha de entrega
+            'B': 16.0,        # Nombre de negocio
+            'C': 10.0,        # Tipo
+            'D': 14.0,        # Direccion
+            'E': 12.0,        # Barrio_poblacion
+            'F': 15.0,        # Nombre cliente
+            'G': 12.0,        # NIT
+            'H': 12.0,        # Telefono
+            'I': 14.0,        # Productos
+            'J': 8.0,         # Cantidad
+            'K': 10.0,        # Precio unit.
+            'L': 11.0,        # Valor total
+            'M': 12.0         # Observaciones
         }
         
         for col_letter, width in anchos_columnas.items():

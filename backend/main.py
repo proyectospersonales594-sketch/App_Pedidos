@@ -335,6 +335,8 @@ def exportar_pedidos_excel(db: Session = Depends(get_db)):
         cliente_db = p.cliente
         cliente_dict = {
             "nombre_negocio": cliente_db.nombre_negocio or cliente_db.nombre_cliente,
+            "nombre_cliente": cliente_db.nombre_cliente,
+            "cc_o_nit": cliente_db.cc_o_nit,
             "tipo_negocio": cliente_db.tipo_negocio,
             "direccion": cliente_db.direccion,
             "barrio_poblacion": cliente_db.barrio_poblacion,
