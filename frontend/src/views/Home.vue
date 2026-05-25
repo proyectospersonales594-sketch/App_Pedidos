@@ -9,7 +9,7 @@
     </header>
 
     <!-- Menu Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
       <!-- Clientes Card -->
       <router-link to="/clientes" class="group relative overflow-hidden rounded-3xl bg-slate-800/50 border border-slate-700/50 p-8 hover:border-violet-500/50 transition-all duration-300 backdrop-blur-xl">
         <div class="absolute -right-4 -top-4 w-32 h-32 bg-violet-600/10 rounded-full blur-3xl group-hover:bg-violet-600/20 transition-all duration-500"></div>
@@ -60,6 +60,23 @@
           </div>
         </div>
       </router-link>
+
+      <!-- Informes Card -->
+      <router-link to="/informes" class="group relative overflow-hidden rounded-3xl bg-slate-800/50 border border-slate-700/50 p-8 hover:border-amber-500/50 transition-all duration-300 backdrop-blur-xl">
+        <div class="absolute -right-4 -top-4 w-32 h-32 bg-amber-600/10 rounded-full blur-3xl group-hover:bg-amber-600/20 transition-all duration-500"></div>
+        <div class="flex flex-col h-full relative z-10">
+          <div class="w-14 h-14 bg-amber-500/20 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+            <BarChart2 class="text-amber-400 w-8 h-8" />
+          </div>
+          <h2 class="text-2xl font-bold mb-3">Informe de Ventas</h2>
+          <p class="text-slate-400 leading-relaxed">
+            Análisis mensual de ventas, clientes activos y exportación de reportes.
+          </p>
+          <div class="mt-auto pt-6 flex items-center text-amber-400 font-semibold text-sm">
+            Ver informes <ChevronRight class="ml-1 w-4 h-4 group-hover:translate-x-1 transition-transform" />
+          </div>
+        </div>
+      </router-link>
     </div>
 
     <!-- Stats or Footer Info -->
@@ -88,7 +105,7 @@
 </template>
 
 <script setup>
-import { Users, ShoppingCart, Package, ChevronRight, Activity, Cloud } from 'lucide-vue-next'
+import { Users, ShoppingCart, Package, ChevronRight, Activity, Cloud, BarChart2 } from 'lucide-vue-next'
 </script>
 
 <style scoped>

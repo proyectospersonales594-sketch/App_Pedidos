@@ -455,3 +455,84 @@ def update_pedido(pedido_id: int, pedido_data: schemas.PedidoCreate, db: Session
     db.refresh(db_pedido)
     return db_pedido
 
+# --- INFORME DE VENTAS ---
+
+MESES_ES = {
+    1: 'Enero', 2: 'Febrero', 3: 'Marzo', 4: 'Abril',
+    5: 'Mayo', 6: 'Junio', 7: 'Julio', 8: 'Agosto',
+    9: 'Septiembre', 10: 'Octubre', 11: 'Noviembre', 12: 'Diciembre'
+}
+
+@app.get('/informes/resumen-historico', response_model=List[schemas.ResumenMensualResponse])
+def get_resumen_historico(db: Session = Depends(get_db)):
+    from sqlalchemy import extract, func
+    resultados = db.query(
+        extract('year', models.Pedido.fecha).label('anio'),
+        extract('month', models.Pedido.fecha).label('mes'),
+        func.sum(models.Pedido.total).label('total_ventas'),
+        func.count(models.Pedido.id).label('cantidad_pedidos')
+    ).group_by('anio', 'mes').order_by('anio', 'mes').all()
+    return [
+        {
+            'anio': int(r.anio),
+            'mes': int(r.mes),
+            'nombre_mes': MESES_ES[int(r.mes)],
+            'total_ventas': r.total_ventas or 0,
+            'cantidad_pedidos': r.cantidad_pedidos
+        }
+        for r in resultados
+    ]
+
+@app.get('/informes/detalle-mes', response_model=List[schemas.DetalleClienteMesResponse])
+def get_detalle_mes(anio: int, mes: int, db: Session = Depends(get_db)):
+    from sqlalchemy import extract, func
+    resultados = db.query(
+        models.Cliente.nombre_cliente.label('cliente_nombre'),
+        models.Cliente.nombre_negocio.label('nombre_negocio'),
+        func.sum(models.Pedido.total).label('total_ventas'),
+        func.count(models.Pedido.id).label('cantidad_pedidos')
+    ).join(models.Pedido, models.Cliente.id == models.Pedido.cliente_id).filter(
+        extract('year', models.Pedido.fecha) == anio,
+        extract('month', models.Pedido.fecha) == mes
+    ).group_by(models.Cliente.id, models.Cliente.nombre_cliente, models.Cliente.nombre_negocio).order_by(func.sum(models.Pedido.total).desc()).all()
+    return [
+        {
+            'cliente_nombre': r.cliente_nombre,
+            'nombre_negocio': r.nombre_negocio,
+            'total_ventas': r.total_ventas or 0,
+            'cantidad_pedidos': r.cantidad_pedidos
+        }
+        for r in resultados
+    ]
+
+@app.get('/informes/exportar-mes')
+def exportar_informe_mes(anio: int, mes: int, db: Session = Depends(get_db)):
+    from sqlalchemy import extract, func
+    from export_excel import generate_informe_excel
+    resultados = db.query(
+        models.Cliente.nombre_cliente.label('cliente_nombre'),
+        models.Cliente.nombre_negocio.label('nombre_negocio'),
+        func.sum(models.Pedido.total).label('total_ventas'),
+        func.count(models.Pedido.id).label('cantidad_pedidos')
+    ).join(models.Pedido, models.Cliente.id == models.Pedido.cliente_id).filter(
+        extract('year', models.Pedido.fecha) == anio,
+        extract('month', models.Pedido.fecha) == mes
+    ).group_by(models.Cliente.id, models.Cliente.nombre_cliente, models.Cliente.nombre_negocio).order_by(func.sum(models.Pedido.total).desc()).all()
+    datos = [
+        {
+            'cliente_nombre': r.cliente_nombre,
+            'nombre_negocio': r.nombre_negocio,
+            'total_ventas': r.total_ventas or 0,
+            'cantidad_pedidos': r.cantidad_pedidos
+        }
+        for r in resultados
+    ]
+    nombre_mes = MESES_ES.get(mes, str(mes))
+    excel_file = generate_informe_excel(datos, nombre_mes, anio)
+    filename = f'Informe_Ventas_{nombre_mes}_{anio}.xlsx'
+    headers = {'Content-Disposition': f'attachment; filename="{filename}"'}
+    return Response(
+        content=excel_file.getvalue(),
+        headers=headers,
+        media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )

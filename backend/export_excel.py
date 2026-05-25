@@ -148,3 +148,107 @@ def generate_pedidos_excel(pedidos_por_fecha):
     wb.save(output)
     output.seek(0)
     return output
+
+def generate_informe_excel(datos, nombre_mes, anio):
+    """Genera el Excel del informe de ventas por cliente para un mes dado."""
+    import io
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, Alignment, Border, Side, PatternFill
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = f"{nombre_mes}_{anio}"
+
+    # Estilos
+    header_fill = PatternFill(start_color="002060", end_color="002060", fill_type="solid")
+    header_font = Font(color="FFFFFF", bold=True, size=11)
+    header_align = Alignment(horizontal="center", vertical="center", wrap_text=True)
+    data_font = Font(size=10)
+    fill_azul_medio = PatternFill(start_color="8DB4E2", end_color="8DB4E2", fill_type="solid")
+    fill_azul_claro = PatternFill(start_color="C5D9F1", end_color="C5D9F1", fill_type="solid")
+    border_side = Side(border_style="thin", color="000000")
+    thin_border = Border(left=border_side, right=border_side, top=border_side, bottom=border_side)
+
+    # Titulo
+    ws.merge_cells("A1:D1")
+    cell_title = ws["A1"]
+    cell_title.value = f"INFORME DE VENTAS JOSE CARO - {nombre_mes.upper()} {anio}"
+    cell_title.font = Font(color="FFFFFF", bold=True, size=12)
+    cell_title.fill = header_fill
+    cell_title.alignment = Alignment(horizontal="center", vertical="center")
+    ws.row_dimensions[1].height = 22
+
+    # Cabeceras
+    headers = ["Nombre Negocio", "Nombre Cliente", "Total Ventas", "Cant. Pedidos"]
+    for col_num, title in enumerate(headers, 1):
+        cell = ws.cell(row=2, column=col_num, value=title)
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = header_align
+        cell.border = thin_border
+
+    # Datos
+    total_ventas_general = 0
+    total_pedidos_general = 0
+    for idx, row in enumerate(datos):
+        r = idx + 3
+        current_fill = fill_azul_medio if idx % 2 == 0 else fill_azul_claro
+        negocio = row.get("nombre_negocio") or row.get("cliente_nombre", "")
+        cliente = row.get("cliente_nombre", "")
+        ventas = row.get("total_ventas", 0)
+        pedidos = row.get("cantidad_pedidos", 0)
+        total_ventas_general += ventas
+        total_pedidos_general += pedidos
+
+        for c in range(1, 5):
+            cell = ws.cell(row=r, column=c)
+            cell.fill = current_fill
+            cell.border = thin_border
+            cell.font = data_font
+            cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+
+        ws.cell(row=r, column=1, value=negocio)
+        ws.cell(row=r, column=2, value=cliente)
+        c_ventas = ws.cell(row=r, column=3, value=ventas)
+        c_ventas.number_format = "$#,##0"
+        ws.cell(row=r, column=4, value=pedidos)
+
+    # Fila de totales
+    fila_total = len(datos) + 3
+    ws.merge_cells(start_row=fila_total, start_column=1, end_row=fila_total, end_column=2)
+    c_lbl = ws.cell(row=fila_total, column=1, value="TOTAL GENERAL")
+    c_lbl.font = Font(bold=True, size=10, color="FFFFFF")
+    c_lbl.fill = header_fill
+    c_lbl.alignment = Alignment(horizontal="center", vertical="center")
+    c_lbl.border = thin_border
+
+    c_tot = ws.cell(row=fila_total, column=3, value=total_ventas_general)
+    c_tot.number_format = "$#,##0"
+    c_tot.font = Font(bold=True, size=10, color="FFFFFF")
+    c_tot.fill = header_fill
+    c_tot.alignment = Alignment(horizontal="center", vertical="center")
+    c_tot.border = thin_border
+
+    c_ped = ws.cell(row=fila_total, column=4, value=total_pedidos_general)
+    c_ped.font = Font(bold=True, size=10, color="FFFFFF")
+    c_ped.fill = header_fill
+    c_ped.alignment = Alignment(horizontal="center", vertical="center")
+    c_ped.border = thin_border
+
+    # Anchos
+    ws.column_dimensions["A"].width = 25
+    ws.column_dimensions["B"].width = 25
+    ws.column_dimensions["C"].width = 16
+    ws.column_dimensions["D"].width = 14
+
+    # Configuración de impresión
+    ws.page_setup.paperSize = ws.PAPERSIZE_LETTER
+    ws.page_setup.orientation = ws.ORIENTATION_PORTRAIT
+    ws.sheet_properties.pageSetUpPr.fitToPage = True
+    ws.page_setup.fitToWidth = 1
+    ws.page_setup.fitToHeight = 0
+
+    output = io.BytesIO()
+    wb.save(output)
+    output.seek(0)
+    return output

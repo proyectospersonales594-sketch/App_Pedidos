@@ -84,3 +84,24 @@ class ItemPedidoResponse(BaseModel):
 
 class PedidoDetailResponse(PedidoListResponse):
     items: List[ItemPedidoResponse]
+
+# --- INFORME DE VENTAS ---
+
+class ResumenMensualResponse(BaseModel):
+    anio: int
+    mes: int
+    nombre_mes: str
+    total_ventas: float
+    cantidad_pedidos: int
+
+    class Config:
+        from_attributes = True
+
+class DetalleClienteMesResponse(BaseModel):
+    cliente_nombre: str
+    nombre_negocio: Optional[str] = None
+    total_ventas: float
+    cantidad_pedidos: int
+
+    class Config:
+        from_attributes = True
