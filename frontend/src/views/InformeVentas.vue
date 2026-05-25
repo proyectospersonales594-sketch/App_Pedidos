@@ -2,23 +2,21 @@
   <div class="min-h-screen bg-[#0f172a] text-white p-6 md:p-12 relative">
 
     <!-- Header -->
-    <header class="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
-      <div class="flex items-center gap-4">
-        <router-link to="/" class="p-2 bg-slate-800 rounded-xl hover:bg-slate-700 transition-colors text-slate-400 hover:text-white">
-          <ArrowLeft class="w-6 h-6" />
-        </router-link>
-        <div>
-          <h1 class="text-3xl md:text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-400">
-            Informe de Ventas
-          </h1>
-          <p class="text-slate-400 text-sm mt-1">Historial y análisis de facturación por período</p>
-        </div>
+    <header class="mb-8 relative flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <router-link to="/" class="absolute left-0 top-1 p-2 bg-slate-800 rounded-xl hover:bg-slate-700 transition-colors text-slate-400 hover:text-white">
+        <ArrowLeft class="w-6 h-6" />
+      </router-link>
+      <div class="text-center w-full pt-12 md:pt-0 md:text-left md:ml-16">
+        <h1 class="text-3xl md:text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-400">
+          Informe de Ventas
+        </h1>
+        <p class="text-slate-400 text-sm mt-1">Historial y análisis de facturación por período</p>
       </div>
     </header>
 
     <!-- Formulario de consulta -->
     <div class="bg-slate-800/40 border border-slate-700/50 rounded-2xl p-6 mb-8 backdrop-blur-sm">
-      <h2 class="text-lg font-semibold text-slate-200 mb-4 flex items-center gap-2">
+      <h2 class="text-lg font-semibold text-slate-200 mb-4 flex items-center justify-center sm:justify-start gap-2">
         <Search class="w-5 h-5 text-amber-400" />
         Consultar por período
       </h2>
@@ -79,13 +77,13 @@
     <!-- Resultado de la consulta por mes -->
     <Transition name="slide-down">
       <div v-if="resultadoDetalle.length > 0 || consultaRealizada" class="mb-10">
-        <div class="flex items-center justify-between mb-4">
-          <h2 class="text-xl font-bold text-slate-100 flex items-center gap-2">
+        <div class="flex flex-col md:flex-row items-center md:justify-between mb-4 gap-4">
+          <h2 class="text-xl font-bold text-slate-100 flex items-center justify-center md:justify-start gap-2 text-center md:text-left">
             <TrendingUp class="w-5 h-5 text-emerald-400" />
             Ventas de {{ nombreMesSeleccionado }} {{ anioSeleccionado }}
           </h2>
           <!-- Resumen rápido -->
-          <div class="flex gap-4" v-if="resultadoDetalle.length > 0">
+          <div class="flex justify-center md:justify-end gap-4 w-full md:w-auto" v-if="resultadoDetalle.length > 0">
             <div class="text-right">
               <p class="text-xs text-slate-400">Total Ventas</p>
               <p class="text-lg font-bold text-emerald-400">{{ formatCurrency(totalVentasMes) }}</p>
@@ -102,7 +100,7 @@
           <p class="text-slate-400">No hay pedidos registrados en este período.</p>
         </div>
 
-        <div v-else class="bg-slate-800/40 border border-slate-700/50 rounded-2xl overflow-hidden backdrop-blur-sm">
+        <div v-else class="bg-slate-800/40 border border-slate-700/50 rounded-2xl overflow-x-auto backdrop-blur-sm w-full">
           <table class="w-full text-sm">
             <thead>
               <tr class="bg-slate-700/60 text-slate-300">
@@ -140,7 +138,7 @@
 
     <!-- Historial Mensual -->
     <div>
-      <h2 class="text-xl font-bold text-slate-100 mb-5 flex items-center gap-2">
+      <h2 class="text-xl font-bold text-slate-100 mb-5 flex items-center justify-center md:justify-start gap-2 text-center md:text-left">
         <Calendar class="w-5 h-5 text-amber-400" />
         Historial de Ventas por Mes
       </h2>
@@ -155,7 +153,7 @@
         <p class="text-slate-400">No hay datos de ventas históricos aún.</p>
       </div>
 
-      <div v-else class="bg-slate-800/40 border border-slate-700/50 rounded-2xl overflow-hidden backdrop-blur-sm">
+      <div v-else class="bg-slate-800/40 border border-slate-700/50 rounded-2xl overflow-x-auto backdrop-blur-sm w-full">
         <table class="w-full text-sm">
           <thead>
             <tr class="bg-slate-700/60 text-slate-300">
