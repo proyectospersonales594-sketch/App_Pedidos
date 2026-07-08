@@ -27,7 +27,7 @@ def tarea_envio_alertas():
         hace_8_dias = ahora_col - timedelta(days=8)
         subquery = db.query(
             Pedido.cliente_id, 
-            func.max(Pedido.fecha_entrega).label('ultima_fecha')
+            func.max(Pedido.fecha).label('ultima_fecha')
         ).group_by(Pedido.cliente_id).subquery()
         
         clientes_riesgo_query = db.query(Cliente, subquery.c.ultima_fecha).join(

@@ -169,7 +169,7 @@ def delete_cliente(cliente_id: int, db: Session = Depends(get_db)):
 
 @app.get("/clientes/{cliente_id}/pedidos", response_model=List[schemas.PedidoResponse])
 def get_pedidos_cliente(cliente_id: int, db: Session = Depends(get_db)):
-    pedidos = db.query(models.Pedido).filter(models.Pedido.cliente_id == cliente_id).order_by(models.Pedido.fecha_entrega.desc()).all()
+    pedidos = db.query(models.Pedido).filter(models.Pedido.cliente_id == cliente_id).order_by(models.Pedido.fecha.desc()).all()
     return pedidos
 
 # --- PRODUCTOS ---
@@ -219,14 +219,14 @@ def delete_producto(producto_id: int, db: Session = Depends(get_db)):
 def get_historial_producto(producto_id: int, db: Session = Depends(get_db)):
     historial = db.query(
         models.ItemPedido.pedido_id,
-        models.Pedido.fecha_entrega.label('fecha'),
+        models.Pedido.fecha,
         models.Cliente.nombre_cliente.label("cliente_nombre"),
         models.ItemPedido.cantidad,
         models.ItemPedido.precio_unitario
     ).join(models.Pedido, models.ItemPedido.pedido_id == models.Pedido.id)\
      .join(models.Cliente, models.Pedido.cliente_id == models.Cliente.id)\
      .filter(models.ItemPedido.producto_id == producto_id)\
-     .order_by(models.Pedido.fecha_entrega.desc()).all()
+     .order_by(models.Pedido.fecha.desc()).all()
     
     return historial
 
@@ -237,7 +237,7 @@ def get_sugerencia_precio(cliente_id: int, producto_id: int, db: Session = Depen
     ultimo_item = db.query(models.ItemPedido)\
         .join(models.Pedido)\
         .filter(models.Pedido.cliente_id == cliente_id, models.ItemPedido.producto_id == producto_id)\
-        .order_by(models.Pedido.fecha_entrega.desc())\
+        .order_by(models.Pedido.fecha.desc())\
         .first()
 
     if ultimo_item:
@@ -279,19 +279,19 @@ def create_pedido(pedido_in: schemas.PedidoCreate, db: Session = Depends(get_db)
 
 @app.get("/pedidos", response_model=List[schemas.PedidoListResponse])
 def get_pedidos(db: Session = Depends(get_db)):
-    pedidos_query = db.query(
+    pedidos = db.query(
         models.Pedido.id,
         models.Pedido.cliente_id,
         models.Pedido.fecha,
         models.Pedido.fecha_entrega,
         models.Pedido.estado,
         models.Pedido.total,
-        models.Cliente.nombre_cliente,
-        models.Cliente.nombre_negocio
+        models.Cliente.nombre_cliente.label("cliente_nombre"),
+        models.Cliente.nombre_negocio.label("nombre_negocio")
     ).join(models.Cliente, models.Pedido.cliente_id == models.Cliente.id)\
-     .order_by(models.Pedido.fecha_entrega.desc()).all()
+     .order_by(models.Pedido.fecha.desc()).all()
     
-    return pedidos_query
+    return pedidos
 @app.get("/pedidos/exportar")
 def exportar_pedidos_excel(db: Session = Depends(get_db)):
     col_tz = timezone(timedelta(hours=-5))
@@ -467,8 +467,8 @@ MESES_ES = {
 def get_resumen_historico(db: Session = Depends(get_db)):
     from sqlalchemy import extract, func
     resultados = db.query(
-        extract('year', models.Pedido.fecha_entrega).label('anio'),
-        extract('month', models.Pedido.fecha_entrega).label('mes'),
+        extract('year', models.Pedido.fecha).label('anio'),
+        extract('month', models.Pedido.fecha).label('mes'),
         func.sum(models.Pedido.total).label('total_ventas'),
         func.count(models.Pedido.id).label('cantidad_pedidos')
     ).group_by('anio', 'mes').order_by('anio', 'mes').all()
@@ -492,8 +492,8 @@ def get_detalle_mes(anio: int, mes: int, db: Session = Depends(get_db)):
         func.sum(models.Pedido.total).label('total_ventas'),
         func.count(models.Pedido.id).label('cantidad_pedidos')
     ).join(models.Pedido, models.Cliente.id == models.Pedido.cliente_id).filter(
-        extract('year', models.Pedido.fecha_entrega) == anio,
-        extract('month', models.Pedido.fecha_entrega) == mes
+        extract('year', models.Pedido.fecha) == anio,
+        extract('month', models.Pedido.fecha) == mes
     ).group_by(models.Cliente.id, models.Cliente.nombre_cliente, models.Cliente.nombre_negocio).order_by(func.sum(models.Pedido.total).desc()).all()
     return [
         {
@@ -515,8 +515,8 @@ def exportar_informe_mes(anio: int, mes: int, db: Session = Depends(get_db)):
         func.sum(models.Pedido.total).label('total_ventas'),
         func.count(models.Pedido.id).label('cantidad_pedidos')
     ).join(models.Pedido, models.Cliente.id == models.Pedido.cliente_id).filter(
-        extract('year', models.Pedido.fecha_entrega) == anio,
-        extract('month', models.Pedido.fecha_entrega) == mes
+        extract('year', models.Pedido.fecha) == anio,
+        extract('month', models.Pedido.fecha) == mes
     ).group_by(models.Cliente.id, models.Cliente.nombre_cliente, models.Cliente.nombre_negocio).order_by(func.sum(models.Pedido.total).desc()).all()
     datos = [
         {
