@@ -467,8 +467,8 @@ MESES_ES = {
 def get_resumen_historico(db: Session = Depends(get_db)):
     from sqlalchemy import extract, func
     resultados = db.query(
-        extract('year', models.Pedido.fecha).label('anio'),
-        extract('month', models.Pedido.fecha).label('mes'),
+        extract('year', models.Pedido.fecha_entrega).label('anio'),
+        extract('month', models.Pedido.fecha_entrega).label('mes'),
         func.sum(models.Pedido.total).label('total_ventas'),
         func.count(models.Pedido.id).label('cantidad_pedidos')
     ).group_by('anio', 'mes').order_by('anio', 'mes').all()
@@ -492,8 +492,8 @@ def get_detalle_mes(anio: int, mes: int, db: Session = Depends(get_db)):
         func.sum(models.Pedido.total).label('total_ventas'),
         func.count(models.Pedido.id).label('cantidad_pedidos')
     ).join(models.Pedido, models.Cliente.id == models.Pedido.cliente_id).filter(
-        extract('year', models.Pedido.fecha) == anio,
-        extract('month', models.Pedido.fecha) == mes
+        extract('year', models.Pedido.fecha_entrega) == anio,
+        extract('month', models.Pedido.fecha_entrega) == mes
     ).group_by(models.Cliente.id, models.Cliente.nombre_cliente, models.Cliente.nombre_negocio).order_by(func.sum(models.Pedido.total).desc()).all()
     return [
         {
@@ -515,8 +515,8 @@ def exportar_informe_mes(anio: int, mes: int, db: Session = Depends(get_db)):
         func.sum(models.Pedido.total).label('total_ventas'),
         func.count(models.Pedido.id).label('cantidad_pedidos')
     ).join(models.Pedido, models.Cliente.id == models.Pedido.cliente_id).filter(
-        extract('year', models.Pedido.fecha) == anio,
-        extract('month', models.Pedido.fecha) == mes
+        extract('year', models.Pedido.fecha_entrega) == anio,
+        extract('month', models.Pedido.fecha_entrega) == mes
     ).group_by(models.Cliente.id, models.Cliente.nombre_cliente, models.Cliente.nombre_negocio).order_by(func.sum(models.Pedido.total).desc()).all()
     datos = [
         {
