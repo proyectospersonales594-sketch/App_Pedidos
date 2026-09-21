@@ -531,14 +531,14 @@ const exportarPedidos = async () => {
     })
     
     const contentDisposition = response.headers['content-disposition']
-    let filename = 'pedidos Jose Caro.xlsx'
+    let filename = 'pedidos Jose Caro.pdf'
     if (contentDisposition) {
       const filenameMatch = contentDisposition.match(/filename="?([^"]+)"?/)
       if (filenameMatch && filenameMatch.length >= 2)
         filename = filenameMatch[1]
     }
     
-    const blob = new Blob([response.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+    const blob = new Blob([response.data], { type: 'application/pdf' })
     const url = window.URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url

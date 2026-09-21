@@ -10,3 +10,4 @@ apscheduler
 openpyxl
 pandas
 resend
+reportlab

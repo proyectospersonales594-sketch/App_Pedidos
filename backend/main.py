@@ -13,7 +13,7 @@ from fastapi import FastAPI, Depends, Query, HTTPException
 from fastapi.responses import Response
 import datetime
 from datetime import timezone, timedelta
-from export_excel import generate_pedidos_excel
+from export_pdf import generate_pedidos_pdf
 from contextlib import asynccontextmanager
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.interval import IntervalTrigger
@@ -363,17 +363,17 @@ def exportar_pedidos_excel(db: Session = Depends(get_db)):
             
         pedidos_por_fecha[fecha_key].append(pedido_dict)
         
-    excel_file = generate_pedidos_excel(pedidos_por_fecha)
+    pdf_file = generate_pedidos_pdf(pedidos_por_fecha)
     
-    filename = f"pedidos Jose Caro {hoy.strftime('%d-%m-%Y')}.xlsx"
+    filename = f"pedidos Jose Caro {hoy.strftime('%d-%m-%Y')}.pdf"
     headers = {
         'Content-Disposition': f'attachment; filename="{filename}"'
     }
     
     return Response(
-        content=excel_file.getvalue(), 
+        content=pdf_file.getvalue(), 
         headers=headers,
-        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        media_type="application/pdf"
     )
 
 @app.get("/pedidos/{pedido_id}", response_model=schemas.PedidoDetailResponse)
