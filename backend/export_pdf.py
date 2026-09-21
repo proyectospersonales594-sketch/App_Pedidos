@@ -8,23 +8,45 @@ from reportlab.lib.units import cm
 
 def generate_pedidos_pdf(pedidos_por_fecha):
     output = io.BytesIO()
-    # A4 landscape is 29.7 cm x 21 cm
+    # A4 landscape is 29.7 cm x 21 cm. Usamos margenes muy pequeños (0.5cm) para maximizar el espacio
     doc = SimpleDocTemplate(
         output, 
         pagesize=landscape(A4), 
-        rightMargin=1*cm, 
-        leftMargin=1*cm, 
-        topMargin=1.5*cm, 
-        bottomMargin=1.5*cm
+        rightMargin=0.5*cm, 
+        leftMargin=0.5*cm, 
+        topMargin=0.5*cm, 
+        bottomMargin=0.5*cm
     )
     
     elements = []
-    styles = getSampleStyleSheet()
-    title_style = styles['Heading1']
-    title_style.alignment = 1 # Center
     
-    cell_style = ParagraphStyle(name='CellStyle', fontSize=8, leading=10, alignment=1) # Center
-    header_cell_style = ParagraphStyle(name='HeaderStyle', fontSize=9, leading=11, alignment=1, textColor=colors.white, fontName='Helvetica-Bold')
+    # Estilo moderno: titulo más pequeño, sin colores de excel
+    title_style = ParagraphStyle(
+        name='ModernTitle', 
+        fontSize=12, 
+        leading=14, 
+        alignment=1, # Centro
+        textColor=colors.HexColor('#0f172a'),
+        fontName='Helvetica-Bold'
+    )
+    
+    # Textos más sobrios (gris oscuro)
+    cell_style = ParagraphStyle(
+        name='CellStyle', 
+        fontSize=7.5, 
+        leading=9, 
+        alignment=1, # Centro
+        textColor=colors.HexColor('#334155')
+    )
+    
+    header_cell_style = ParagraphStyle(
+        name='HeaderStyle', 
+        fontSize=8, 
+        leading=10, 
+        alignment=1, 
+        textColor=colors.HexColor('#0f172a'), 
+        fontName='Helvetica-Bold'
+    )
     
     if not pedidos_por_fecha:
         elements.append(Paragraph("No hay pedidos para exportar", title_style))
@@ -48,17 +70,23 @@ def generate_pedidos_pdf(pedidos_por_fecha):
             title_date = "FECHA INDEFINIDA"
             
         elements.append(Paragraph(f"PEDIDOS JOSE CARO - {title_date}", title_style))
-        elements.append(Spacer(1, 0.5*cm))
+        elements.append(Spacer(1, 0.3*cm))
         
         data = [header_row]
+        
+        # Diseño moderno: sin bordes verticales, líneas sutiles
         table_style = TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#002060')),
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#f1f5f9')), # Fondo gris ultra claro para la cabecera
             ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
             ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-            ('INNERGRID', (0, 0), (-1, -1), 0.25, colors.black),
-            ('BOX', (0, 0), (-1, -1), 0.25, colors.black),
-            ('BOTTOMPADDING', (0,0), (-1,0), 6),
-            ('TOPPADDING', (0,0), (-1,0), 6),
+            
+            # Lineas divisorias sutiles horizontales (nada de cajas de Excel)
+            ('LINEBELOW', (0, 0), (-1, -1), 0.5, colors.HexColor('#e2e8f0')),
+            ('LINEABOVE', (0, 0), (-1, 0), 1, colors.HexColor('#cbd5e1')),
+            ('LINEBELOW', (0, 0), (-1, 0), 1, colors.HexColor('#cbd5e1')),
+            
+            ('BOTTOMPADDING', (0,0), (-1,-1), 8),
+            ('TOPPADDING', (0,0), (-1,-1), 8),
         ])
         
         row_idx = 1
@@ -75,8 +103,8 @@ def generate_pedidos_pdf(pedidos_por_fecha):
             nit = cliente.get("cc_o_nit", "")
             telefono = cliente.get("telefono", "")
             
-            # Alternate row colors by order (not by item)
-            bg_color = colors.HexColor('#8DB4E2') if p_idx % 2 == 0 else colors.HexColor('#C5D9F1')
+            # Intercalado de filas muy sutil (blanco y casi blanco)
+            bg_color = colors.HexColor('#ffffff') if p_idx % 2 == 0 else colors.HexColor('#f8fafc')
             
             for i, item in enumerate(items):
                 producto = item["producto_nombre"]
@@ -103,24 +131,32 @@ def generate_pedidos_pdf(pedidos_por_fecha):
                 
                 data.append(row_data)
                 
-                # Style background for this row
                 table_style.add('BACKGROUND', (0, row_idx), (-1, row_idx), bg_color)
                 row_idx += 1
             
-            # Merge customer cells if multiple items
+            # Combinar las celdas del cliente si hay varios items
             if len(items) > 1:
                 start_merge = row_idx - len(items)
                 end_merge = row_idx - 1
-                for col in range(8): # First 8 columns
+                for col in range(8): # Primeras 8 columnas (datos del cliente)
                     table_style.add('SPAN', (col, start_merge), (col, end_merge))
         
-        # Calculate optimal widths
-        # total width is A4 landscape width (29.7cm) - margins (2cm) = 27.7cm
+        # Nuevos anchos calculados para usar los 28.7 cm disponibles (29.7 - 0.5 - 0.5)
+        # Esto soluciona que la fecha se divida en dos renglones
         col_widths = [
-            1.8*cm, 2.5*cm, 1.6*cm, 2.7*cm, 
-            2.0*cm, 2.5*cm, 1.9*cm, 1.9*cm, 
-            3.2*cm, 1.2*cm, 1.8*cm, 2.0*cm, 
-            2.6*cm
+            2.0*cm, # F. Entrega
+            2.7*cm, # Negocio
+            1.7*cm, # Tipo
+            2.9*cm, # Dirección
+            2.0*cm, # Barrio
+            2.7*cm, # Cliente
+            2.1*cm, # NIT
+            2.2*cm, # Teléfono
+            3.5*cm, # Producto
+            1.1*cm, # Cant
+            1.8*cm, # P. Unit
+            2.0*cm, # Total
+            2.0*cm  # Obs
         ]
         
         t = Table(data, colWidths=col_widths, repeatRows=1)
