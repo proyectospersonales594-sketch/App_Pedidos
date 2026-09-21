@@ -103,8 +103,8 @@ def generate_pedidos_pdf(pedidos_por_fecha):
             nit = cliente.get("cc_o_nit", "")
             telefono = cliente.get("telefono", "")
             
-            # Intercalado de filas muy sutil (blanco y casi blanco)
-            bg_color = colors.HexColor('#ffffff') if p_idx % 2 == 0 else colors.HexColor('#f8fafc')
+            # Intercalado de filas con un tono más oscuro para distinguir bien al imprimir
+            bg_color = colors.HexColor('#ffffff') if p_idx % 2 == 0 else colors.HexColor('#e2e8f0')
             
             for i, item in enumerate(items):
                 producto = item["producto_nombre"]
